@@ -1,0 +1,107 @@
+body {
+font-family: OpenSans, Calibri, FontAwesome;
+}
+
+h4 {
+margin: 1px;
+font-weight: normal;
+}
+
+#map {
+position: absolute;
+left: 0px;
+top: 0px;
+width: 100%;
+height: 100%;
+}
+
+.logo {
+position: absolute;
+left: 10px;
+top: 10px;
+height: 50px;
+}
+
+.block {
+position: absolute;
+left: 10px;
+}
+
+.block nav {
+position: absolute;
+left: 0px;
+top: 0px;
+font-size: 16px;
+line-height: 16px;
+}
+
+.block nav a {
+display: block;
+padding: 10px;
+text-align: center;
+color: rgb(127, 127, 127);
+}
+
+.block nav.nav-bg-dark {
+background: rgba(127, 127, 127, 0.7);
+}
+
+.block nav.nav-bg-dark a {
+color: white;
+}
+
+.block nav a:hover {
+background: rgba(112, 48, 160, 0.7);
+color: white;
+cursor: pointer;
+}
+
+.block .content {
+background: rgba(255, 255, 255, 0.7);
+position: absolute;
+left: 36px;
+top: 0px;
+width: 150px;
+padding: 14px;
+color: rgb(127, 127, 127);
+font-size: 12px;
+}
+
+.row {
+padding: 3px;
+}
+
+.icon {
+color: rgb(112, 48, 160);
+}
+
+#user {
+top: 100px;
+}
+
+#place {
+top: 200px;
+}
+
+#place img[alt="pin_type"] {
+width: 16px;
+vertical-align: middle;
+margin-right: 3px;
+margin-left: -3px;
+}
+
+#menu {
+bottom: 150px;
+}
+
+
+.pin-rnr {
+width: 75px;
+margin-bottom: -30px;
+margin-left: 30px;
+}
+
+.pin-rnr-description {
+font-style: italic;
+color: gray;
+}
