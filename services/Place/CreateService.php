@@ -22,7 +22,7 @@ class CreateService implements IQuarkPostService, IQuarkCustomProcessorService {
 		if (!$model->Validate())
 			return Quark::Response(array('status' => 400));
 
-		//$model->Save();
+		$model->Save();
 
 		return Quark::Response(array(
 			'status' => 200,

@@ -11,6 +11,8 @@ use Quark\Extensions\Mongo\IMongoModel;
  * @property string $date
  * @property array $navpoints
  * @property array $participants
+ * @property string $name
+ * @property string $description
  *
  * @package Models
  */
@@ -30,7 +32,9 @@ class Place implements IMongoModel {
 			'author' => '',
 			'date' => '',
 			'navpoints' => array(),
-			'participants' => array()
+			'participants' => array(),
+			'name' => null,
+			'description' => null
 		);
 	}
 
@@ -40,6 +44,8 @@ class Place implements IMongoModel {
 	public function Rules () {
 		return array(
 			QuarkField::Type($this->author, 'string'),
+			QuarkField::Type($this->name, 'string', true),
+			QuarkField::Type($this->description, 'string', true),
 			QuarkField::DateTime($this->date),
 			QuarkField::MinLengthInclusive($this->navpoints, 1),
 			QuarkField::MinLengthInclusive($this->participants, 1)
