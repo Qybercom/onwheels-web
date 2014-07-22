@@ -6,7 +6,7 @@ use Quark\QuarkJSONIOProcessor;
 
 use Quark\IQuarkGetService;
 use Quark\IQuarkPostService;
-use Quark\IQuarkCustomProcessorService;
+use Quark\IQuarkServiceWithCustomProcessor;
 
 use Quark\Extensions\Mongo\Model;
 
@@ -15,10 +15,10 @@ use Models\User;
 use Quark\Extensions\Facebook\User as Facebook;
 
 /**
- * Class LoginService
+ * Class LoginServiceWithWithCustomProcessor
  * @package Services\User
  */
-class LoginService implements IQuarkGetService, IQuarkPostService, IQuarkCustomProcessorService {
+class LoginService implements IQuarkGetService, IQuarkPostService, IQuarkServiceWithCustomProcessor {
 	/**
 	 * @return \Quark\IQuarkIOProcessor
 	 */
@@ -34,16 +34,26 @@ class LoginService implements IQuarkGetService, IQuarkPostService, IQuarkCustomP
 		$profile = Facebook::Profile();
 
 		if ($profile == null)
-			Quark::Redirect(Facebook::Login());
+			return Quark::Response(array(
+				'status' => 305,
+				'url' => Facebook::Login()
+			));
 
 		$model = $this->_model($profile);
 
-		if ($model == null)
-			return 'Error occurred while authorizing';
+		if ($model == null || !Quark::Login($model))
+			return Quark::Response(array(
+				'status' => 400
+			));
 
-		$user = $model->Model();
+		if (isset($_GET['ajax'])) Quark::Redirect('/');
 
-		return 'Welcome ' . $user->first_name . ' ' . $user->last_name . ' ' . Facebook::Session();
+		return Quark::Response(array(
+			'status' => 200,
+			'data' => array(
+				'user' => $model->Model()
+			)
+		));
 	}
 
 	/**
@@ -54,7 +64,7 @@ class LoginService implements IQuarkGetService, IQuarkPostService, IQuarkCustomP
 	 *
 	 * Statuses:
 	 * 200 - OK
-	 * 400 - Login user not found in the database or database problem
+	 * 400 - User not found in the database or database problem
 	 * 404 - User not found on Facebook
 	 *
 	 * @param mixed $data

@@ -5,13 +5,13 @@ use Quark\Quark;
 use Quark\QuarkJSONIOProcessor;
 
 use Quark\IQuarkGetService;
-use Quark\IQuarkCustomProcessorService;
+use Quark\IQuarkServiceWithCustomProcessor;
 
 use Quark\Extensions\Mongo\Model;
 
 use Models\User;
 
-class ListService implements IQuarkGetService, IQuarkCustomProcessorService {
+class ListService implements IQuarkGetService, IQuarkServiceWithCustomProcessor {
 	public function Processor () {
 		return new QuarkJSONIOProcessor();
 	}

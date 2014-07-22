@@ -1,16 +1,32 @@
 var app = {
     map: {},
-    place: {},
+    place: {
+        elem: {}
+    },
+    user: {
+        elem: {},
+        data: {}
+    },
     pin: {},
     route: {
         template: {
             create: {}
         }
+    },
+    template: {
+        place: {
+            create: {}
+        },
+        user: {
+            login: {},
+            profile: {}
+        }
     }
 };
 
 $(function () {
-    app.place = $('#place');
+    app.user.elem = $('#user');
+    app.place.elem = $('#place');
 
     app.map = new Map('#map', {
         click: function (e) {
@@ -24,19 +40,77 @@ $(function () {
         lng: 28.852930068969727
     });
 
-    app.route.template.create = new Template('#place-template-create');
+    app.template.place.create = new Template('#place-template-create');
+    app.template.user.login = new Template('#user-template-login');
+    app.template.user.profile = new Template('#user-template-profile');
 });
+
+app.user.profile = function () {
+    app.template.user.profile._tags = app.user.data;
+    app.user.elem.html(app.template.user.profile.Compile());
+};
+
+app.user.login = function () {
+    app.user.elem.html(app.template.user.login.Compile());
+};
+
+app.user.Login = function () {
+    $.ajax({
+        url: '/user/login',
+        dataType: 'json',
+        data: {
+            ajax: true
+        },
+
+        error: function (data) {
+            console.log(data);
+        },
+
+        success: function (response) {
+            switch (response.status) {
+                case 305:
+                    window.location.href = response.url;
+                    break;
+
+                case 200:
+                    app.user.data = response.data;
+                    app.user.profile();
+                    break;
+
+                default:
+                    console.log(response);
+                    break;
+            }
+        }
+    });
+};
+
+app.user.Logout = function () {
+    $.ajax({
+        url: '/user/logout',
+        dataType: 'json',
+
+        error: function (data) {
+            console.log(data);
+        },
+
+        success: function (response) {
+            if (response.status == 200) app.user.login();
+            else console.log(response);
+        }
+    });
+};
 
 app.route.create = function () {
     app.route.clear();
 
-    app.route.template.create._tags.place = {
+    app.template.place.create._tags.place = {
         name: '',
         date: '',
         time: ''
     };
 
-    app.place.html(app.route.template.create.Compile());
+    app.place.elem.html(app.template.place.create.Compile());
 };
 
 app.route.clear = function (id) {
@@ -118,7 +192,7 @@ app.pin.race = {
         app.pin.race._template.place.Tag('length', (marker.data.route.length / 1000).toFixed(2));
         app.pin.race._template.place.Tag('members', marker.data.participants.length);
 
-        app.place.html(app.pin.race._template.place.Compile());
+        app.place.elem.html(app.pin.race._template.place.Compile());
 
         marker.data.route.Show();
         marker.data.finish.Show();
