@@ -18,6 +18,10 @@ $mongoDB = new \Quark\Extensions\Mongo\Config();
 $mongoDB->Source('main', $mongoSource);
 
 $config->Extension($mongoDB);
+$config->Extension(new \Quark\Extensions\Facebook\Config(
+	'678583925524753',
+	'0f6e778d59e8a74b5efb78b434cb9c46'
+));
 
 Quark::On(Quark::EVENT_HTTP_EXCEPTION, function () {
 	echo 'Something wrong...';
