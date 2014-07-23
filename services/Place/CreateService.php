@@ -14,6 +14,10 @@ use Quark\Extensions\Mongo\Model;
 
 use Models\Place;
 
+/**
+ * Class CreateService
+ * @package Services\Place
+ */
 class CreateService implements
 	IQuarkPostService,
 	IQuarkServiceWithCustomProcessor,
@@ -60,6 +64,15 @@ class CreateService implements
 	}
 
 	/**
+	 * Request: {"date":"YYYY-MM-DD","name":"string","description":"string","participants":[],"navpoints":[],"position":[]}
+	 * Response: {"status":"200|400"}
+	 *
+	 * @note At different use cases, some keys can be nullable
+	 *
+	 * Statuses:
+	 * 200 - OK
+	 * 400 - Validation error
+	 *
 	 * @param mixed $data
 	 * @return mixed
 	 */
@@ -77,9 +90,6 @@ class CreateService implements
 
 		$model->Save();
 
-		return Quark::Response(array(
-			'status' => 200,
-			'user' => $model->Model()
-		));
+		return Quark::Response(array('status' => 200));
 	}
 }

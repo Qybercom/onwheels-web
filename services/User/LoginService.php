@@ -57,8 +57,6 @@ class LoginService implements IQuarkGetService, IQuarkPostService, IQuarkService
 	}
 
 	/**
-	 * Endpoint for API calls from mobile devices
-	 *
 	 * Request: {"id":"your_facebook_id","token":"your_facebook_access_token"}
 	 * Response: {"status":"200|400|404"}
 	 *

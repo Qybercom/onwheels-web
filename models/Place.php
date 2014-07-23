@@ -54,7 +54,7 @@ class Place implements IMongoModel, IMongoModelWithAfterFind, IMongoModelWithBef
 			QuarkField::In($this->type, array('race', 'rnr', 'source', 'studio', 'store')),
 			QuarkField::Type($this->name, 'string', true),
 			QuarkField::Type($this->description, 'string', true),
-			QuarkField::DateTime($this->date),
+			QuarkField::DateTime($this->date, true),
 			QuarkField::MinLengthInclusive($this->navpoints, 2, true),
 			QuarkField::MinLengthInclusive($this->participants, 1, true)
 		);
