@@ -1,11 +1,4 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: alex025
- * Date: 23.07.14
- * Time: 9:22
- */
-
 namespace Services\Place;
 
 use Quark\Quark;
