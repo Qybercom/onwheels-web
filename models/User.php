@@ -1,15 +1,20 @@
 <?php
 namespace Models;
 
-use Quark\Extensions\Mongo\IMongoModelWithBeforeSave;
+use Quark\Quark;
 use Quark\QuarkField;
-use Quark\Extensions\Mongo\IMongoModel;
 
 use Quark\IQuarkAuthorizableModel;
+
+use Quark\Extensions\Mongo\Model;
+use Quark\Extensions\Mongo\IMongoModel;
+use Quark\Extensions\Mongo\IMongoModelWithAfterFind;
+use Quark\Extensions\Mongo\IMongoModelWithBeforeSave;
 
 /**
  * Class User
  *
+ * @property string $_id
  * @property string $id
  * @property string $first_name
  * @property string $last_name
@@ -19,7 +24,7 @@ use Quark\IQuarkAuthorizableModel;
  *
  * @package Models
  */
-class User implements IMongoModel, IQuarkAuthorizableModel, IMongoModelWithBeforeSave {
+class User implements IMongoModel, IQuarkAuthorizableModel, IMongoModelWithBeforeSave, IMongoModelWithAfterFind {
 	/**
 	 * @return string
 	 */
@@ -37,7 +42,10 @@ class User implements IMongoModel, IQuarkAuthorizableModel, IMongoModelWithBefor
 			'last_name' => '',
 			'gender' => '',
 			'locale' => '',
-			'role' => 'user'
+			'role' => 'user',
+			'distance' => 0.0,
+			'achievements' => array(),
+			'achievementCount' => 0
 		);
 	}
 
@@ -72,9 +80,50 @@ class User implements IMongoModel, IQuarkAuthorizableModel, IMongoModelWithBefor
 	}
 
 	/**
+	 * @return IQuarkAuthorizableModel
+	 */
+	public function RenewSession () {
+		return Model::GetById('User', $this->_id);
+	}
+
+	/**
 	 * @return bool|null
 	 */
 	public function BeforeSave () {
 		$this->role = isset($this->role) ? $this->role : 'user';
+	}
+
+	/**
+	 * @param $item
+	 * @return mixed
+	 */
+	public function AfterFind ($item) {
+		$item->distance = 0.0;
+
+		$races = Model::Find(
+			'Place',
+			array(
+				'type' => 'race',
+				'participants' => array(
+					'$in' => array($item->_id->{'$id'})
+				)
+			),
+			array(
+				'afterFind' => false
+			)
+		);
+
+		foreach ($races as $i => $race)
+			$item->distance += $race->length;
+
+		$item->distance = round($item->distance, 2);
+
+		/**
+		 * @TODO move to db side
+		 */
+		$item->achievements = array('Test achievement');
+		$item->achievementCount = sizeof($item->achievements);
+
+		return $item;
 	}
 }

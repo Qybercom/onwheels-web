@@ -1,227 +1,250 @@
-var app = {
-    map: {},
-    place: {
-        elem: {}
-    },
-    user: {
-        elem: {},
-        data: {}
-    },
-    pin: {},
-    route: {
-        template: {
-            create: {}
-        }
-    },
-    template: {
-        place: {
-            create: {}
-        },
-        user: {
-            login: {},
-            profile: {}
-        }
-    }
-};
-
 $(function () {
-    app.user.elem = $('#user');
-    app.place.elem = $('#place');
+    App.Place = new Quark.Model();
 
-    app.map = new Map('#map', {
-        click: function (e) {
-            console.log(e.position);
+    App.Place.Form('#place form', {
+        beforeSubmit: function (form) {
+            form.notice.success.slideUp(300);
+            form.notice.error.slideUp(300);
+        },
+
+        200: function (data, form) {
+            form.notice.success.html('Место/заезд создано успешно').slideDown(500);
+        },
+        400: function (data, form) {
+            form.notice.error.html('Необходимо указать как минимум 2 точки').slideDown(500);
         }
     });
 
-    app.map.Zoom(14, true);
-    app.map.Center({
-        lat: 46.9842927059675,
-        lng: 28.852930068969727
-    });
+    App.User = new Quark.Model();
 
-    app.template.place.create = new Template('#place-template-create');
-    app.template.user.login = new Template('#user-template-login');
-    app.template.user.profile = new Template('#user-template-profile');
-});
-
-app.user.profile = function () {
-    app.template.user.profile._tags = app.user.data;
-    app.user.elem.html(app.template.user.profile.Compile());
-};
-
-app.user.login = function () {
-    app.user.elem.html(app.template.user.login.Compile());
-};
-
-app.user.Login = function () {
-    $.ajax({
-        url: '/user/login',
-        dataType: 'json',
-        data: {
-            ajax: true
-        },
-
-        error: function (data) {
-            console.log(data);
-        },
-
-        success: function (response) {
-            switch (response.status) {
-                case 305:
-                    window.location.href = response.url;
-                    break;
-
-                case 200:
-                    app.user.data = response.data;
-                    app.user.profile();
-                    break;
-
-                default:
-                    console.log(response);
-                    break;
-            }
-        }
-    });
-};
-
-app.user.Logout = function () {
-    $.ajax({
-        url: '/user/logout',
-        dataType: 'json',
-
-        error: function (data) {
-            console.log(data);
-        },
-
-        success: function (response) {
-            if (response.status == 200) app.user.login();
-            else console.log(response);
-        }
-    });
-};
-
-app.route.create = function () {
-    app.route.clear();
-
-    app.template.place.create._tags.place = {
-        name: '',
-        date: '',
-        time: ''
+    App.User.showLogin = function () {
+        App.User.Frame('#user', '#user-template-login');
     };
 
-    app.place.elem.html(app.template.place.create.Compile());
+    App.User.showProfile = function () {
+        App.User.Frame('#user', '#user-template-profile');
+        App.User.Frame('#menu-authorized', '#user-template-menu');
+    };
+
+    App.User.Login = function () {
+        Quark.Get('/user/login', {}, {
+            200: function (response) {
+                App.User.Data(response.data);
+                App.User.showProfile();
+            },
+            305: function (response) {
+                window.location.href = response.url;
+            }
+        });
+    };
+
+    App.User.Logout = function () {
+        Quark.Get('/user/logout', {}, {
+            200: function () {
+                App.User.showLogin();
+            }
+        });
+    };
+
+    App.Menu = new Quark.Model();
+
+    App.Menu.Legend = function () {
+        App.User.Frame('#menu-content', '#menu-template-legend');
+    };
+
+    App.Map = new Map('#map', {
+        click: function (e) {
+
+        }
+    });
+});
+
+var App = {
+    Map: {},
+    Markers: [],
+
+    User: {},
+    Place: {},
+
+    validator: new Quark.Validator({
+        ok: function (elem) {
+            elem.siblings('.invalid-field').remove();
+        },
+        error: function (elem, message) {
+            elem.before('<div class="invalid-field">' + message + '</div>');
+        }
+    })
 };
 
-app.route.clear = function (id) {
-    var i = 0, markers = app.map.Find(Map.Marker, function (item) {
-        return (id == undefined || item.data._id == id) && item.data.route instanceof Map.Route;
-    });
+/**
+ * @param markers
+ */
+App.Markers.Load = function (markers) {
+    if (!(markers instanceof Array)) return;
+
+    var i = 0;
 
     while (i < markers.length) {
-        markers[i].data.route.Hide();
-        markers[i].data.finish.Hide();
-        markers[i].Icon({
-            url: '/static/img/pin_' + markers[i].data.type + '.png'
-        });
+        App.Markers.push(new App.Marker({
+            type: markers[i].type,
+            position: markers[i].position,
+            data: markers[i],
+            template: '#pin-template-' + markers[i].type
+        }));
 
         i++;
     }
 };
 
-app.mark = function (type, opt) {
-    opt = opt || {};
+/**
+ * @param callback
+ */
+App.Markers.Each = function (callback) {
+    if (!(callback instanceof Function)) return;
 
-    if (app.pin[type] == undefined) return;
+    var i = 0;
 
-    opt.data = opt.data || {};
-        opt.data.type = opt.data.type || type;
+    while (i < App.Markers.length) {
+        callback(App.Markers[i]);
 
-    app.pin[type]._template = {
-        pin: new Template('#pin-template-' + type, opt.data),
-        place: new Template('#place-template-' + type, opt.data)
-    };
-
-    var marker = app.map.Marker({
-        position: opt.position,
-        data: opt.data,
-        click: app.pin[type].click,
-        icon: {
-            url: '/static/img/pin_' + type + '.png'
-        }
-    });
-
-    marker.Show();
-
-    if (app.pin[type].add instanceof Function) app.pin[type].add(marker);
-};
-
-
-app.pin.start = {
-    add: function () {},
-    click: function () {}
-};
-
-app.pin.finish = {
-    add: function () {},
-    click: function () {}
-};
-
-app.pin.race = {
-    add: function (marker) {
-        marker.data.route = app.map.Route({
-            points: marker.data.navpoints,
-            style: {
-                strokeColor: 'rgb(112, 48, 160)',
-                strokeWeight: 2
-            }
-        });
-
-        marker.data.finish = app.map.Marker({
-            position: marker.data.navpoints[marker.data.navpoints.length - 1],
-            icon: {
-                url: '/static/img/pin_finish.png'
-            }
-        });
-    },
-    click: function (marker) {
-        marker.Icon({
-            url: '/static/img/pin_start.png'
-        });
-
-        app.pin.race._template.place.Tag('length', (marker.data.route.length / 1000).toFixed(2));
-        app.pin.race._template.place.Tag('members', marker.data.participants.length);
-
-        app.place.elem.html(app.pin.race._template.place.Compile());
-
-        marker.data.route.Show();
-        marker.data.finish.Show();
+        i++;
     }
 };
 
-app.pin.source = {
-    add: function () {},
-    click: function () {}
-};
+/**
+ * @param opt
+ * @constructor
+ */
+App.Marker = function (opt) {
+    opt = opt || {};
 
-app.pin.store = {
-    add: function () {},
-    click: function () {}
-};
+    if (opt.type == undefined) return;
+    if (opt.position == undefined) return;
 
-app.pin.studio = {
-    add: function () {},
-    click: function () {}
-};
+    var that = this;
 
-app.pin.rnr = {
-    add: function (marker) {
-        /*var tooltip = new Map.Tooltip(marker, function (e) {
-            e.Reset();
-            e.Content(app.pin.rnr._template.pin.Compile());
+    that.Data = opt.data;
+    that.Type = opt.type;
+    that.Position = opt.position;
+
+    that._template = new Quark.Template(opt.template, opt.data);
+
+    that._route = new App.Route({
+        points: that.Data.navpoints instanceof Array ? that.Data.navpoints : []
+    });
+
+    that._marker = new App.Map.Marker({
+        position: that.Position,
+        icon: that._icon || {
+            url: '/static/img/pin_' + that.Type + '.png'
+        }
+    });
+
+    that._marker.Show();
+
+    that._tooltip = that._marker.Tooltip({
+        custom: true,
+
+        ready: function () {
+            that._tooltip.Content(that._template.Compile());
+        }
+    });
+
+    that._tooltip.Open();
+
+    /**
+     * Open marker components and attached route
+     */
+    that.Open = function () {
+        App.Markers.Each(function (marker) {
+            marker.Close()
         });
 
-        tooltip.Open();*/
-    },
-    click: function (marker) {}
+        that._route.Show();
+
+        if (that.Data.navpoints instanceof Array && that.Data.navpoints.length != 0) that._marker.Hide();
+    };
+
+    /**
+     * Close marker components and attached route
+     */
+    that.Close = function () {
+        that._route.Hide();
+
+        if (that.Data.navpoints instanceof Array && that.Data.navpoints.length != 0) that._marker.Show();
+    };
+
+    that._marker.click = function () {
+        that.Open();
+    };
+};
+
+/**
+ * @param opt
+ * @constructor
+ */
+App.Route = function (opt) {
+    opt = opt || {};
+
+    var that = this;
+
+    /**
+     * @type Array
+     * @private
+     */
+    that._points = opt.points instanceof Array ? opt.points : [];
+
+    /**
+     * @type {Map.Marker}
+     * @private
+     */
+    that._start = new App.Map.Marker({
+        position: that._points.length != 0 ? that._points[0] : {},
+        icon: that._icon || {
+            url: '/static/img/pin_start.png'
+        }
+    });
+
+    /**
+     * @type {Map.Marker}
+     * @private
+     */
+    that._finish = new App.Map.Marker({
+        position: that._points.length != 0 ? that._points[that._points.length - 1] : {},
+        icon: that._icon || {
+            url: '/static/img/pin_finish.png'
+        }
+    });
+
+    /**
+     * @type {Map.Route}
+     * @private
+     */
+    that._route = App.Map.Route({
+        points: that._points,
+        style: {
+            strokeColor: 'rgb(152, 98, 210)',
+            strokeWeight: 2
+        }
+    });
+
+    /**
+     * Show route and its components
+     */
+    that.Show = function () {
+        that._start.Show();
+        that._finish.Show();
+
+        that._route.Show();
+    };
+
+    /**
+     * Hide route and its components
+     */
+    that.Hide = function () {
+        that._start.Hide();
+        that._finish.Hide();
+
+        that._route.Hide();
+    };
 };

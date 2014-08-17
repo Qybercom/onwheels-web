@@ -48,7 +48,7 @@ class CreateService implements
 			QuarkRole::Authenticated()
 		);
 
-		if (isset($this->_data['type']))
+		if (isset($this->_data->type))
 			$criteria[] = Quark::Access('admin');
 
 		return $criteria;

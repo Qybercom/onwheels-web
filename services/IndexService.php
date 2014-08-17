@@ -11,7 +11,8 @@ use Models\Place;
 class IndexService implements IQuarkGetService {
 	public function Get ($data) {
 		return Quark::View(array(
-			'places' => Model::Find('Place')
+			'places' => Model::Find('Place'),
+			'achievements' => Model::Find('Achievement')
 		));
 	}
 }

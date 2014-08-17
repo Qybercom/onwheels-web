@@ -16,15 +16,37 @@ background: rgb(255, 255, 255);
 background: rgb(224, 234, 255);
 }
 
+.success {
+background: rgb(117, 255, 82);
+color: white;
+}
+
+.warning {
+background: rgb(248, 255, 82);
+}
+
+.error {
+background: rgb(255, 144, 82);
+color: white;
+}
+
+.q-hr {
+height: 1px;
+border: 0px;
+background: rgb(211, 211, 211);
+}
+
 
 
 
 
 .q-control {
-margin: 4px 2px;
-padding: 10px;
+display: inline-block;
 background: white;
-border: 1px solid rgb(211, 211, 211);
+border: 1px solid rgb(235, 235, 235);
+outline: none;
+margin: 2px;
+padding: 10px;
 font-family: OpenSans, Calibri, FontAwesome;
 }
 
@@ -35,12 +57,13 @@ padding: 1px;
 
 
 .q-label {
+display: inline-block;
 margin: 2px;
 color: rgb(175, 175, 175);
 word-wrap: break-word;
 }
 
-.q-label, .q-label.left { float: left; }
+.q-label.left { float: left; }
 .q-label.right { float: right; }
 
 
@@ -72,6 +95,11 @@ background: rgb(172, 118, 230);
 
 .q-button.violet:active {
 background: rgb(112, 48, 160);
+}
+
+.q-form {
+display: block;
+padding: 15px;
 }
 
 
@@ -115,3 +143,7 @@ color: white !important;
 .width-90 { width: 90%; }
 .width-95 { width: 95%; }
 .width-100 { width: 100%; }
+
+.hidden {
+display: none;
+}

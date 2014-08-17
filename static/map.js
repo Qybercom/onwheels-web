@@ -1,7 +1,7 @@
 /**
  * Google Maps abstraction layer
  *
- * @version 1.2.3
+ * @version 1.3.0
  * @author Alex Furnica
  *
  * @param elem
@@ -10,14 +10,9 @@
  * @constructor
  */
 var Map = function (elem, opt) {
-    var that = this;
+    var that = this, map = $(elem);
 
-    that._map = null;
-
-    /**
-     * @type jQuery
-     */
-    that.Element = $(elem);
+    if (map.length == 0) return;
 
     /**
      * @type Array
@@ -57,13 +52,15 @@ var Map = function (elem, opt) {
         overviewMapControl: false
     };
 
+    that._map = new google.maps.Map(map[0], that.Settings);
+
     /**
      * @param position
      */
     that.Center = function (position) {
         that.Settings.center = Map.Point(position);
 
-        that.Render();
+        that._map.setOptions(that.Settings);
     };
 
     /**
@@ -76,7 +73,7 @@ var Map = function (elem, opt) {
 
         that.Settings.zoom = zoom;
 
-        that.Render();
+        that._map.setOptions(that.Settings);
     };
 
     /**
@@ -100,19 +97,6 @@ var Map = function (elem, opt) {
     };
 
     /**
-     * @param i
-     * @private
-     */
-    that._render = function (i) {
-        that._map = new google.maps.Map(that.Element[i], that.Settings);
-
-        that._event('click');
-        that._event('mouseover');
-        that._event('mousemove');
-        that._event('mouseout');
-    };
-
-    /**
      * @param name
      * @private
      */
@@ -128,13 +112,6 @@ var Map = function (elem, opt) {
                 }
             });
         });
-    };
-
-    /**
-     * Rendering the map
-     */
-    that.Render = function () {
-        that.Element.each(that._render);
     };
 
     /**
@@ -163,7 +140,10 @@ var Map = function (elem, opt) {
         return output;
     };
 
-    that.Element.each(that._render);
+    that._event('click');
+    that._event('mouseover');
+    that._event('mousemove');
+    that._event('mouseout');
 };
 
 /**
@@ -181,6 +161,8 @@ Map.Point = function (position) {
  * @constructor
  */
 Map.Marker = function (map, opt) {
+    opt = opt || {};
+
     var that = this;
 
     /**
@@ -189,12 +171,25 @@ Map.Marker = function (map, opt) {
     that.data = opt.data || {};
 
     /**
+     * Flag of removing
+     */
+    that.removed = false;
+
+    /**
      * @type Function
      */
     that.click = opt.click || function () {};
     that.mouseover = opt.mouseover || function () {};
     that.mousemove = opt.mousemove || function () {};
     that.mouseout = opt.mouseout || function () {};
+    that.dragstart = opt.dragstart || function () {};
+    that.drag = opt.drag || function () {};
+    that.dragend = opt.dragend || function () {};
+
+    /**
+     * @type Array of Map.Tooltip
+     */
+    that.Tooltips = [];
 
     that._map = map;
     that._marker = null;
@@ -216,13 +211,18 @@ Map.Marker = function (map, opt) {
     that.Render = function () {
         that._marker = new google.maps.Marker({
             position: Map.Point(that.position),
-            icon: opt.icon
+            icon: opt.icon,
+            map: that._map,
+            visible: false
         });
 
         that._event('click');
         that._event('mouseover');
         that._event('mousemove');
         that._event('mouseout');
+        that._event('dragstart');
+        that._event('drag');
+        that._event('dragend');
     };
 
     that._event = function (name) {
@@ -234,21 +234,56 @@ Map.Marker = function (map, opt) {
     };
 
     /**
+     * Mark marker as removed
+     */
+    that.Remove = function () {
+        that.removed = true;
+        that.Hide();
+    };
+
+    /**
      * Hide the marker
      */
     that.Hide = function () {
-        that._marker.setMap(null);
+        that._marker.setVisible(false);
     };
 
     /**
      * Show the marker
      */
     that.Show = function () {
-        that._marker.setMap(that._map);
+        that._marker.setVisible(true);
     };
 
+    /**
+     * @param flag
+     */
+    that.Draggable = function (flag) {
+        that._marker.setDraggable(flag);
+    };
+
+    /**
+     * @param icon
+     */
     that.Icon = function (icon) {
         that._marker.setIcon(icon);
+    };
+
+    /**
+     * @param position
+     */
+    that.Position = function (position) {
+        that._marker.setPosition(Map.Point(position));
+    };
+
+    /**
+     * @param opt
+     * @returns {*}
+     */
+    that.Tooltip = function (opt) {
+        that.Tooltips.push(new Map.Tooltip(that, opt));
+
+        return that.Tooltips[that.Tooltips.length - 1];
     };
 
     that.Render();
@@ -262,17 +297,27 @@ Map.Marker.__key = 'Markers';
  *
  * @constructor
  */
-Map.Tooltip = function (marker, ready) {
-    ready = ready instanceof Function
-        ? ready
-        : function () {};
+Map.Tooltip = function (marker, opt) {
+    opt = opt || {};
 
     var that = this;
 
     /**
      * @type {boolean}
      */
-    that.custom = false;
+    that.custom = opt.custom || false;
+
+    /**
+     * @type Map.Marker
+     * @private
+     */
+    that._marker = marker;
+
+    /**
+     * @type Function
+     */
+    that.ready = opt.ready;
+    that.click = opt.click;
 
     /**
      * DOM elements of tooltip
@@ -288,14 +333,14 @@ Map.Tooltip = function (marker, ready) {
      * @private
      */
     that._tooltip = new google.maps.InfoWindow({
-        content: 'hello'
+        content: '&nbsp;'
     });
 
     /**
      * Init & open InfoWindow
      */
     that.Open = function () {
-        that._tooltip.open(marker.map, marker);
+        that._tooltip.open(that._marker._map, that._marker._marker);
     };
 
     /**
@@ -309,11 +354,13 @@ Map.Tooltip = function (marker, ready) {
      * @param html
      */
     that.Content = function (html) {
+        if (!that.element.outer.length) return;
+
         if (!that.custom) that.element.inner.html(html);
         else that.element.outer
             .html(html)
             .css({
-                'margin-left': '20px',
+                'margin-left': '50px',
                 'margin-top': (-that.element.outer.height() + 60) + 'px'
             });
     };
@@ -351,7 +398,7 @@ Map.Tooltip = function (marker, ready) {
             that.element.outer.html(opt.content);
         }
 
-        ready(that);
+        if (that.ready instanceof Function) that.ready(that);
     });
 };
 
@@ -385,10 +432,10 @@ Map.Route = function (map, opt) {
      * Route visual settings
      */
     that.style = opt.style || {};
-        that.style.geodesic = opt.style.geodesic || true;
-        that.style.strokeColor = opt.style.strokeColor || 'black';
-        that.style.strokeOpacity = opt.style.strokeOpacity || 1.0;
-        that.style.strokeWeight = opt.style.strokeWeight || 1;
+        that.style.geodesic = that.style.geodesic || true;
+        that.style.strokeColor = that.style.strokeColor || 'black';
+        that.style.strokeOpacity = that.style.strokeOpacity || 1.0;
+        that.style.strokeWeight = that.style.strokeWeight || 1;
 
     /**
      * @param position

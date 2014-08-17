@@ -69,14 +69,14 @@ class LoginService implements IQuarkGetService, IQuarkPostService, IQuarkService
 	 * @return mixed
 	 */
 	public function Post ($data) {
-		$input = Quark::DataArray($data, array(
+		/*$input = Quark::DataArray($data, array(
 			'id' => '',
 			'token' => ''
-		));
+		));*/
 
-		Facebook::Session($input['token']);
+		Facebook::Session($data->token);
 
-		$profile = Facebook::Profile($input['id']);
+		$profile = Facebook::Profile($data->id);
 
 		if ($profile == null)
 			return Quark::Response(array(
@@ -98,7 +98,7 @@ class LoginService implements IQuarkGetService, IQuarkPostService, IQuarkService
 		$model = new Model(new User(), $profile);
 
 		$record = Model::Find('User', array(
-			'id' => $profile['id']
+			'id' => (string)$profile['id']
 		));
 
 		if (sizeof($record) == 0) {
